@@ -1,0 +1,1 @@
+The core of this repository's code has been taken from [Pascal Stauffer's repository](https://github.com/pstauffer/gitlab-webhook-receiver).

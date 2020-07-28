@@ -1,0 +1,6 @@
+{
+    "repo_dir": "absolute/path/to/repo/dir",
+    "repo_name": "name of repo on GitHub/GitLab",
+    "webhook_secret": "",
+    "command": "command to be executed to run your code"
+}
