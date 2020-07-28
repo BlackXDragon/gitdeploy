@@ -20,6 +20,7 @@ except ImportError:
     from BaseHTTPServer import HTTPServer as HTTPServer
 import sys
 import logging
+import shlex
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.DEBUG,
@@ -46,9 +47,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                             runningProcess.terminate()
                         except EnvironmentError as err:
                             print(err)
-                    p = Popen('git pull origin master', cwd = config['repo_dir'])
+                    p = Popen(shlex.split('git pull origin master'), cwd = config['repo_dir'])
                     p.wait()
-                    runningProcess = Popen(config['command'], cwd = config['repo_dir'])
+                    runningProcess = Popen(shlex.split(config['command']), cwd = config['repo_dir'])
                     #runningProcess.communicate()
                 except OSError as err:
                     self.send_response(500, "OSError")
@@ -124,7 +125,7 @@ def main(addr, port):
     """Start a HTTPServer which waits for requests."""
     httpd = HTTPServer((addr, port), RequestHandler)
     print("Server started!")
-    runningProcess = Popen(config['command'], cwd = config['repo_dir'])
+    runningProcess = Popen(shlex.split(config['command']), cwd = config['repo_dir'])
     #runningProcess.communicate()
     httpd.serve_forever()
 
