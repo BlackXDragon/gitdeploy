@@ -9,6 +9,7 @@ import yaml
 from subprocess import Popen, PIPE, STDOUT
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
 from importlib import import_module
+from multiprocessing import Process
 try:
     # For Python 3.0 and later
     from http.server import HTTPServer
@@ -26,6 +27,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
 
 runningProcess = None
 
+config = None
+
 class RequestHandler(BaseHTTPRequestHandler):
     """A POST request handler."""
 
@@ -33,15 +36,20 @@ class RequestHandler(BaseHTTPRequestHandler):
         global runningProcess
         # Check if the gitlab token is valid
         if gitlab_token_header == config['webhook_secret']:
+            print(project)
             if config['repo_name'] == project:
                 logging.info("Updating repository.")
                 try:
-                    # run command in background
-                    runningProcess.terminate()
+                    self.send_response(200, "OK")
+                    if runningProcess.poll() is None:
+                        try:
+                            runningProcess.terminate()
+                        except EnvironmentError as err:
+                            print(err)
                     p = Popen('git pull origin master', cwd = config['repo_dir'])
                     p.wait()
                     runningProcess = Popen(config['command'], cwd = config['repo_dir'])
-                    self.send_response(200, "OK")
+                    #runningProcess.communicate()
                 except OSError as err:
                     self.send_response(500, "OSError")
                     logging.error("Command could not run successfully.")
@@ -79,14 +87,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        if args.modules:
-            self.process_from_module(gitlab_token_header, project)
-            self.end_headers()
-            return
-
         try:
-            self.get_info_from_config(project, config)
-            self.do_token_mgmt(gitlab_token_header, json_payload)
+            self.do_token_mgmt(gitlab_token_header, project)
         except KeyError as err:
             self.send_response(500, "KeyError")
             if err == project:
@@ -118,10 +120,12 @@ def get_parser():
 
 
 def main(addr, port):
+    global runningProcess
     """Start a HTTPServer which waits for requests."""
     httpd = HTTPServer((addr, port), RequestHandler)
     print("Server started!")
     runningProcess = Popen(config['command'], cwd = config['repo_dir'])
+    #runningProcess.communicate()
     httpd.serve_forever()
 
 
