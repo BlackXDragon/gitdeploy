@@ -21,6 +21,7 @@ except ImportError:
 import sys
 import logging
 import shlex
+import git
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.DEBUG,
@@ -29,6 +30,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
 runningProcess = None
 
 config = None
+
+repo = None
 
 class RequestHandler(BaseHTTPRequestHandler):
     """A POST request handler."""
@@ -47,8 +50,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                             runningProcess.terminate()
                         except EnvironmentError as err:
                             print(err)
-                    p = Popen(shlex.split('git pull origin master'), cwd = config['repo_dir'])
-                    p.wait()
+                    print(repo.pull())
                     runningProcess = Popen(shlex.split(config['command']), cwd = config['repo_dir'])
                     #runningProcess.communicate()
                 except OSError as err:
@@ -137,4 +139,5 @@ if __name__ == '__main__':
     with open('config.json', 'r') as f:
         config = json.load(f)
 
+    repo = git.cmd.Git(config['repo_dir'])
     main(args.addr, args.port)
